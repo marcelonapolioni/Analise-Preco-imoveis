@@ -2,6 +2,6 @@
 base="light"  # Ou "dark"
 primaryColor="#1E90FF"  # Cor principal
 backgroundColor="#F0F2F6"  # Cor de fundo
-secondaryBackgroundColor="#4169E1"  # Cor do fundo da barra lateral
+secondaryBackgroundColor="#084d6e"  # Cor do fundo da barra lateral
 textColor="#000000"  # Cor do texto
 font="sans serif"  # Fonte utilizada

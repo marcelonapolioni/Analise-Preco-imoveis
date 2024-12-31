@@ -4,48 +4,19 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import folium
 from streamlit_folium import st_folium
+from matplotlib.ticker import FuncFormatter
+from utils import *
 
 # Configurando o estilo dos gráficos
 sns.set_theme(style="whitegrid")
 
-# Função para carregar os dados
-@st.cache_data
-def load_data():
-    # Substitua pelo caminho correto do arquivo
-    df = pd.read_csv("imoveis-sao-paulo.csv")
-    return df
-
-def average_price_by_negotiation_and_district(df, negotiation_type, selected_district):
-    st.subheader(f"Média de Preços por Distrito - {negotiation_type.capitalize()}")
-
-    # Filtrar dados pelo tipo de negociação
-    df_filtered = df[df["Tipo de Negociação"] == negotiation_type]
-
-    # Se um distrito específico foi selecionado, filtrar por distrito
-    if selected_district:
-        df_filtered = df_filtered[df_filtered["Distrito"] == selected_district]
-
-    # Calcular a média de preços por distrito
-    avg_prices = df_filtered.groupby("Distrito")["Preço"].mean()
-
-    # Verificar se há dados para exibir
-    if avg_prices.empty:
-        st.warning(f"Não há dados disponíveis para {negotiation_type} no distrito selecionado.")
-        return
-
-    # Gráfico de barras
-    fig, ax = plt.subplots(figsize=(12, 8))
-    avg_prices.plot(kind="bar", color="skyblue" if negotiation_type == "sale" else "orange", ax=ax)
-    ax.set_title(f"Média de Preços - {negotiation_type.capitalize()} ({'Todos os Distritos' if not selected_district else selected_district})", fontsize=14)
-    ax.set_xlabel("Distrito", fontsize=12)
-    ax.set_ylabel("Preço Médio (R$)", fontsize=12)
-    plt.xticks(rotation=45, ha="right", fontsize=10)
-    st.pyplot(fig)
 
 
-# Função para exibir análise por distrito
+
+
+
 def display_district_analysis(df, negotiation_type, distrito):
-    st.title(f"Análise de Imóveis no Distrito: {distrito} ({negotiation_type.capitalize()})")
+    st.title(f"Estatísticas por distrito: {distrito} ({negotiation_type.capitalize()})")
 
     # Filtrar os dados pelo distrito e tipo de negociação
     df_filtered = df[(df["Distrito"] == distrito) & (df["Tipo de Negociação"] == negotiation_type)]
@@ -71,19 +42,45 @@ def display_district_analysis(df, negotiation_type, distrito):
     ax.set_title("Preço Médio por Número de Quartos")
     ax.set_xlabel("Número de Quartos")
     ax.set_ylabel("Preço Médio (R$)")
+    ax.yaxis.set_major_formatter(FuncFormatter(formatar_preco))  # Aplica o formatador ao eixo Y
     st.pyplot(fig)
 
-    # Gráfico 3: Preço Médio por Presença de Piscina
-    st.subheader("Preço Médio por Presença de Piscina")
+
+    # Custo por metro quadrado
+    st.subheader("Análise de Custo por Metro Quadrado")
+    # Filtrar dados pelo tipo de negociação
+    if negotiation_type:
+        df = df[df["Tipo de Negociação"] == negotiation_type]
+    # Filtrar dados pelo distrito
+    if distrito:
+        df = df[df["Distrito"] == distrito]
+    # Verificar se há dados após os filtros
+    if df.empty:
+        st.warning("Não há dados disponíveis para os filtros selecionados.")
+        return
+    # Adicionar coluna de custo por metro quadrado
+    if "Tamanho" in df.columns and df["Tamanho"].notnull().all() and (df["Tamanho"] > 0).all():
+        df["Custo por m²"] = (df["Preço"] / df["Tamanho"]).round(2)  # Arredondar para 2 casas decimais
+    else:
+        st.warning("A coluna 'Tamanho' está ausente, possui valores nulos ou contém valores inválidos. Não é possível calcular o custo por metro quadrado.")
+        return
+    # Ordenar os imóveis pelo custo por metro quadrado de forma ascendente
+    df_sorted = df.sort_values(by="Custo por m²", ascending=True)
+    st.dataframe(df_sorted.style.format({"Custo por m²": "R$ {:.2f}", "Preço": "R$ {:.2f}"}))
+    
+   
+    # Custo médio por piscina
+    st.subheader("Custo Médio por Presença de Piscina")
+    # Calcular os valores médios para cada categoria
     media_preco_piscina = df_filtered.groupby("Piscina")["Preço"].mean()
-    fig, ax = plt.subplots(figsize=(10, 6))
-    media_preco_piscina.plot(kind="bar", color=["red", "green"], ax=ax)
-    ax.set_title("Preço Médio por Presença de Piscina")
-    ax.set_xlabel("Piscina (0 = Não, 1 = Sim)")
-    ax.set_ylabel("Preço Médio (R$)")
-    st.pyplot(fig)
+    # Mapear os valores de 0 e 1 para uma descrição textual
+    labels = {0: "Sem Piscina", 1: "Com Piscina"}
+    # Exibir os resultados textualmente
+    for piscina, preco_medio in media_preco_piscina.items():
+        descricao = labels.get(piscina, "Desconhecido")
+        st.write(f"**{descricao}:** R$ {preco_medio:,.2f}".replace(",", "."))
 
-
+    
 
 def display_map_by_district(df, negotiation_type, selected_district):
     st.subheader(f"Mapa de Imóveis no Distrito: {selected_district}")
@@ -109,31 +106,13 @@ def display_map_by_district(df, negotiation_type, selected_district):
 
 
 
-def bar_plot_correlation(df, negotiation_type):
-    st.subheader(f"Principais Correlações - {negotiation_type.capitalize()}")
-    
-    df_filtered = df[df["Tipo de Negociação"] == negotiation_type]
-    if df_filtered.empty:
-        st.warning(f"Não há dados disponíveis para {negotiation_type}.")
-        return
-    
-    # Selecionar apenas colunas numéricas
-    numeric_columns = df_filtered.select_dtypes(include=["float64", "int64"])
-    correlation_matrix = numeric_columns.corr()["Preço"].drop("Preço").sort_values(ascending=False)
-    
-    fig, ax = plt.subplots(figsize=(10, 6))
-    correlation_matrix.plot(kind="bar", color="skyblue", ax=ax)
-    ax.set_title(f"Correlação com o Preço - {negotiation_type.capitalize()}")
-    ax.set_ylabel("Correlação")
-    st.pyplot(fig)
-
-
 def main():
     st.sidebar.title("Filtros")
     st.sidebar.write("Selecione o tipo de negociação e o distrito para análise.")
 
     # Carregar os dados
-    df = load_data()
+    csv_path = "./imoveis-sao-paulo.csv"
+    df = load_data(csv_path)
 
     # Selecionar o tipo de negociação
     negotiation_type = st.sidebar.radio("Selecione o Tipo de Negociação:", ["sale", "rent"])
@@ -143,30 +122,16 @@ def main():
     selected_district = st.sidebar.selectbox("Selecione o Distrito:", district_options)
 
     # Criar as abas
-    tab1, tab2, tab3, tab4 = st.tabs(["Estatísticas Gerais", "Análises por Distrito", "Visualização no Mapa", "display_correlation_matrix_by_negotiation"])
+    tab1, tab2 = st.tabs(["Estatísticas por Distrito", "Visualização do distrito no Mapa"])
+
 
     with tab1:
-        st.header("Estatísticas Gerais")
-        # Código para exibir estatísticas gerais (Ex: média de preços, variância, etc.)
-        #display_advanced_statistics(df)
-
-    with tab2:
-        st.header(f"Análise de Imóveis no Distrito: {selected_district}")
         # Código para exibir análises específicas para o distrito escolhido
         display_district_analysis(df, negotiation_type, selected_district)
 
-    with tab3:
-        st.header("Visualização no Mapa")
+    with tab2:
         # Código para exibir o mapa interativo
         display_map_by_district(df, negotiation_type, selected_district)
-    
-    with tab4:
-        st.header("Média de Preço por Distrito")
-        # Código para exibir a matriz de correlação
-        average_price_by_negotiation_and_district(df, negotiation_type, selected_district)
-
 
 if __name__ == "__main__":
     main()
-
-
