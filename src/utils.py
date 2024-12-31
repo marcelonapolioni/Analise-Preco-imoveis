@@ -16,8 +16,18 @@ def load_data(filepath: str) -> pd.DataFrame:
     return data
 
 
-def formatar_preco(valor, pos):
+def format_price(valor,pos):
+    """
+    Formata um valor numérico para o formato monetário brasileiro.
+
+    Parâmetros:
+        valor (float): O valor numérico a ser formatado.
+
+    Retorno:
+        str: O valor formatado no formato 'R$ X.XXX,00', substituindo a vírgula pelo ponto para conformidade com o padrão brasileiro.
+    """
     return f'R$ {valor:,.0f}'.replace(",", ".")
+
 
 
 

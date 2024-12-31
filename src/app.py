@@ -5,14 +5,10 @@ import matplotlib.pyplot as plt
 import folium
 from streamlit_folium import st_folium
 from matplotlib.ticker import FuncFormatter
-from utils import *
+from .utils import *
 
 # Configurando o estilo dos gráficos
 sns.set_theme(style="whitegrid")
-
-
-
-
 
 
 def display_district_analysis(df, negotiation_type, distrito):
@@ -42,7 +38,7 @@ def display_district_analysis(df, negotiation_type, distrito):
     ax.set_title("Preço Médio por Número de Quartos")
     ax.set_xlabel("Número de Quartos")
     ax.set_ylabel("Preço Médio (R$)")
-    ax.yaxis.set_major_formatter(FuncFormatter(formatar_preco))  # Aplica o formatador ao eixo Y
+    ax.yaxis.set_major_formatter(FuncFormatter(format_price))  # Aplica o formatador ao eixo Y
     st.pyplot(fig)
 
 
@@ -132,6 +128,4 @@ def main():
     with tab2:
         # Código para exibir o mapa interativo
         display_map_by_district(df, negotiation_type, selected_district)
-
-if __name__ == "__main__":
-    main()
+        
