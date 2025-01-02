@@ -38,34 +38,71 @@ def display_district_analysis(df, negotiation_type, distrito):
     ax.set_title("Preço Médio por Número de Quartos")
     ax.set_xlabel("Número de Quartos")
     ax.set_ylabel("Preço Médio (R$)")
-    ax.yaxis.set_major_formatter(FuncFormatter(format_price))  # Aplica o formatador ao eixo Y
+    ax.yaxis.set_major_formatter(FuncFormatter(format_price))
     st.pyplot(fig)
 
 
     # Custo por metro quadrado
-    st.subheader("Análise de Custo por Metro Quadrado")
-    # Filtrar dados pelo tipo de negociação
-    if negotiation_type:
-        df = df[df["Tipo de Negociação"] == negotiation_type]
-    # Filtrar dados pelo distrito
-    if distrito:
-        df = df[df["Distrito"] == distrito]
-    # Verificar se há dados após os filtros
-    if df.empty:
-        st.warning("Não há dados disponíveis para os filtros selecionados.")
+    st.subheader(f"Custo por Metro Quadrado ({negotiation_type.capitalize()}) - Distrito: {distrito}")
+    # Filtrar os dados pelo tipo de negociação e distrito
+    df_filtered = df[(df["Tipo de Negociação"] == negotiation_type) & (df["Distrito"] == distrito)]
+
+    if df_filtered.empty:
+        st.warning("Não há dados disponíveis para o tipo de negociação e distrito selecionados.")
         return
-    # Adicionar coluna de custo por metro quadrado
-    if "Tamanho" in df.columns and df["Tamanho"].notnull().all() and (df["Tamanho"] > 0).all():
-        df["Custo por m²"] = (df["Preço"] / df["Tamanho"]).round(2)  # Arredondar para 2 casas decimais
+    # Cálculo de custo por metro quadrado
+    if "Tamanho" in df_filtered.columns and df_filtered["Tamanho"].notnull().all() and (df_filtered["Tamanho"] > 0).all():
+        df_filtered["Custo por m²"] = (df_filtered["Preço"] / df_filtered["Tamanho"]).round(2)
     else:
         st.warning("A coluna 'Tamanho' está ausente, possui valores nulos ou contém valores inválidos. Não é possível calcular o custo por metro quadrado.")
         return
-    # Ordenar os imóveis pelo custo por metro quadrado de forma ascendente
-    df_sorted = df.sort_values(by="Custo por m²", ascending=True)
-    st.dataframe(df_sorted.style.format({"Custo por m²": "R$ {:.2f}", "Preço": "R$ {:.2f}"}))
-    
-   
-    # Custo médio por piscina
+    # Filtros adicionais
+    st.write("### Filtre o custo por metro quadrado por categoria")
+
+    quartos = st.selectbox(
+        "Quantidade de Quartos",
+        options=["Todos"] + sorted(df_filtered["Quartos"].unique().tolist()),
+        index=0
+    )
+
+    suites = st.selectbox(
+        "Quantidade de Suítes",
+        options=["Todos"] + sorted(df_filtered["Suítes"].unique().tolist()),
+        index=0
+    )
+
+    piscina = st.selectbox(
+        "Piscina",
+        options=["Todos", "Com Piscina", "Sem Piscina"],
+        index=0
+    )
+
+    vagas = st.selectbox(
+        "Quantidade de Vagas",
+        options=["Todos"] + sorted(df_filtered["Vagas"].unique().tolist()),
+        index=0
+    )
+    # Aplicando os filtros adicionais
+    if quartos != "Todos":
+        df_filtered = df_filtered[df_filtered["Quartos"] == int(quartos)]
+    if suites != "Todos":
+        df_filtered = df_filtered[df_filtered["Suítes"] == int(suites)]
+    if vagas != "Todos":
+        df_filtered = df_filtered[df_filtered["Vagas"] == int(vagas)]
+
+    if piscina == "Com Piscina":
+        df_filtered = df_filtered[df_filtered["Piscina"] == 1]
+    elif piscina == "Sem Piscina":
+        df_filtered = df_filtered[df_filtered["Piscina"] == 0]
+    # Exibindo os dados filtrados
+    if not df_filtered.empty:
+        st.write("### Resultado Filtrado")
+        st.dataframe(df_filtered.style.format({"Custo por m²": "R$ {:.2f}", "Preço": "R$ {:.2f}"}))
+    else:
+        st.warning("Nenhum imóvel corresponde aos filtros selecionados.")
+        
+
+     # Custo médio por piscina
     st.subheader("Custo Médio por Presença de Piscina")
     # Calcular os valores médios para cada categoria
     media_preco_piscina = df_filtered.groupby("Piscina")["Preço"].mean()
@@ -75,6 +112,8 @@ def display_district_analysis(df, negotiation_type, distrito):
     for piscina, preco_medio in media_preco_piscina.items():
         descricao = labels.get(piscina, "Desconhecido")
         st.write(f"**{descricao}:** R$ {preco_medio:,.2f}".replace(",", "."))
+
+
 
     
 
@@ -102,8 +141,9 @@ def display_map_by_district(df, negotiation_type, selected_district):
 
 
 
+
 def main():
-    st.sidebar.title("Filtros")
+    st.sidebar.title("Filtre")
     st.sidebar.write("Selecione o tipo de negociação e o distrito para análise.")
 
     # Carregar os dados

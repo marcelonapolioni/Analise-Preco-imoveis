@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 
+st.cache_data
 def load_data(filepath: str) -> pd.DataFrame:
     """
     Carrega os dados de um arquivo CSV
@@ -16,7 +17,7 @@ def load_data(filepath: str) -> pd.DataFrame:
     return data
 
 
-def format_price(valor,pos):
+def format_price(valor, pos):
     """
     Formata um valor numérico para o formato monetário brasileiro.
 
