@@ -12,6 +12,24 @@ sns.set_theme(style="whitegrid")
 
 
 def display_district_analysis(df, negotiation_type, distrito):
+
+    """
+    Exibe análises detalhadas sobre os imóveis de um distrito específico.
+
+    Args:
+        df (pd.DataFrame): DataFrame contendo os dados dos imóveis.
+        negotiation_type (str): Tipo de negociação ('sale' ou 'rent').
+        distrito (str): Nome do distrito a ser analisado.
+
+    Funções:
+        - Exibe gráficos de distribuição de preços e preço médio por número de quartos.
+        - Calcula e filtra os imóveis por custo por metro quadrado.
+        - Fornece análises detalhadas, como custo médio por presença de piscina.
+
+    Retorna:
+        None. As análises e gráficos são exibidos diretamente na interface Streamlit.
+    """
+
     st.title(f"Estatísticas por distrito: {distrito} ({negotiation_type.capitalize()})")
 
     # Filtrar os dados pelo distrito e tipo de negociação
@@ -100,7 +118,7 @@ def display_district_analysis(df, negotiation_type, distrito):
         st.dataframe(df_filtered.style.format({"Custo por m²": "R$ {:.2f}", "Preço": "R$ {:.2f}"}))
     else:
         st.warning("Nenhum imóvel corresponde aos filtros selecionados.")
-        
+
 
      # Custo médio por piscina
     st.subheader("Custo Médio por Presença de Piscina")
@@ -118,6 +136,23 @@ def display_district_analysis(df, negotiation_type, distrito):
     
 
 def display_map_by_district(df, negotiation_type, selected_district):
+    """
+    Exibe análises detalhadas sobre os imóveis de um distrito específico.
+
+    Args:
+        df (pd.DataFrame): DataFrame contendo os dados dos imóveis.
+        negotiation_type (str): Tipo de negociação ('sale' ou 'rent').
+        distrito (str): Nome do distrito a ser analisado.
+
+    Funções:
+        - Exibe gráficos de distribuição de preços e preço médio por número de quartos.
+        - Calcula e filtra os imóveis por custo por metro quadrado.
+        - Fornece análises detalhadas, como custo médio por presença de piscina.
+
+    Retorna:
+        None. As análises e gráficos são exibidos diretamente na interface Streamlit.
+    """
+
     st.subheader(f"Mapa de Imóveis no Distrito: {selected_district}")
     
     # Filtrar dados pelo distrito e tipo de negociação
@@ -143,6 +178,19 @@ def display_map_by_district(df, negotiation_type, selected_district):
 
 
 def main():
+    """
+        Função principal para execução do aplicativo Streamlit.
+
+        Funções:
+            - Configura o sidebar com filtros de tipo de negociação e distrito.
+            - Divide o aplicativo em abas:
+                - Aba 1: Análises estatísticas do distrito.
+                - Aba 2: Mapa interativo dos imóveis.
+
+        Retorna:
+            None. O aplicativo é renderizado na interface do Streamlit.
+        """
+    
     st.sidebar.title("Filtre")
     st.sidebar.write("Selecione o tipo de negociação e o distrito para análise.")
 
