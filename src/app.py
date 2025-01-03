@@ -1,11 +1,14 @@
-import streamlit as st
+import folium
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
-import folium
-from streamlit_folium import st_folium
+import streamlit as st
 from matplotlib.ticker import FuncFormatter
-from .utils import *
+from streamlit_folium import st_folium
+from folium.plugins import MarkerCluster
+from matplotlib.ticker import FuncFormatter
+
+from .utils import load_data, format_price
 
 # Configurando o estilo dos gráficos
 sns.set_theme(style="whitegrid")
@@ -46,6 +49,7 @@ def display_district_analysis(df, negotiation_type, distrito):
     ax.set_title(f"Distribuição de Preços no Distrito {distrito}")
     ax.set_xlabel("Preço (R$)")
     ax.set_ylabel("Frequência")
+    ax.xaxis.set_major_formatter(FuncFormatter(format_price))
     st.pyplot(fig)
 
     # Gráfico 2: Preço Médio por Número de Quartos
@@ -165,11 +169,34 @@ def display_map_by_district(df, negotiation_type, selected_district):
     # Criar o mapa centrado no primeiro imóvel do distrito (ou coordenada padrão)
     default_lat, default_lon = filtered_data.iloc[0][["Latitude", "Longitude"]] if not filtered_data.empty else [-23.5505, -46.6333]
     m = folium.Map(location=[default_lat, default_lon], zoom_start=13)
+
+    # Adicionar marcadores ao mapa
+    #marker_cluster = MarkerCluster().add_to(m)
+
     
     for _, row in filtered_data.iterrows():
+
+        if row["Piscina"] == 1:
+            icon = folium.Icon(color="orange", icon="swimmer", prefix="fa")
+        
+        elif row["Vagas"] > 1:
+            icon = folium.Icon(color="Purple", icon='car', prefix="fa")
+
+        elif row["Suítes"] > 0:
+            icon = folium.Icon(color="blue", icon="bed", prefix="fa")
+        
+        else:
+            icon = folium.Icon(color="grey", icon="info-circle", prefix="fa")
+
+
         folium.Marker(
             location=[row["Latitude"], row["Longitude"]],
-            popup=f"R$ {row['Preço']:,.2f} - {row['Quartos']} Quartos",
+            popup=  f"R$ {row['Preço']:,.2f}<br>"
+                    f"{row['Quartos']} Quartos<br>"
+                    f"{'Com piscina' if row['Piscina'] == 1 else 'Sem Piscina'}<br>"
+                    f"Suítes: {row['Suítes']}<br>"
+                    f"Vagas: {row['Vagas']}",
+                icon=icon
         ).add_to(m)
     
     st_folium(m, width=800)
